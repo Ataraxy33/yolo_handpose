@@ -15,6 +15,10 @@ import numpy as np
 import random
 import time
 import mediapipe as mp
+import cv2
+import socket
+import pickle
+import struct
 
 # 加载模型组件库
 from components.hand_detect.yolo_v3_hand import yolo_v3_hand_model
@@ -26,175 +30,8 @@ from components.classify_imagenet.imagenet_c import classify_imagenet_model
 from lib.hand_lib.cores.handpose_fuction import handpose_track_keypoints21_pipeline
 from lib.hand_lib.cores.handpose_fuction import hand_tracking,audio_recognize,judge_click_stabel,draw_click_lines,detect,h_gesture,hand_angle
 from lib.hand_lib.utils.utils import parse_data_cfg
-from playsound import playsound
-
-def audio_process_dw_edge_cnt(info_dict): #dw是down，下降沿（dw_edge）
-
-    while (info_dict["handpose_procss_ready"] == False): # 等待 模型加载 判断手关键点进程是否运行
-        time.sleep(2)
-
-    gesture_names = ["click"]
-    gesture_dict = {}
-
-    for k_ in gesture_names:
-        gesture_dict[k_] = None
-
-    reg_cnt = 0
-    while True:
-        time.sleep(0.01)
-        try:
-            reg_cnt = info_dict["click_dw_cnt"]
-            for i in range(reg_cnt):
-
-                playsound("./materials/audio/sentences/welldone.mp3")
-            info_dict["click_dw_cnt"] = info_dict["click_dw_cnt"] - reg_cnt
-        except Exception as inst:
-            print(type(inst),inst)    # exception instance
 
 
-        if info_dict["break"] == True:
-            break
-
-def audio_process_up_edge_cnt(info_dict): #语音播放进程上升沿有效
-
-    while (info_dict["handpose_procss_ready"] == False): # 等待 模型加载
-        time.sleep(2)
-
-    gesture_names = ["click"]
-    gesture_dict = {}
-
-    for k_ in gesture_names:
-        gesture_dict[k_] = None
-
-    reg_cnt = 0
-    while True:
-        time.sleep(0.01)
-        # print(" --->>> audio_process")
-        try:
-            reg_cnt = info_dict["click_up_cnt"]
-            for i in range(reg_cnt):
-
-                playsound("./materials/audio/sentences/Click.mp3")
-            info_dict["click_up_cnt"] = info_dict["click_up_cnt"] - reg_cnt
-        except Exception as inst:
-            print(type(inst),inst)    # the exception instance
-
-
-        if info_dict["break"] == True:
-            break
-
-def audio_process_dw_edge(info_dict):
-
-    while (info_dict["handpose_procss_ready"] == False): # 等待 模型加载
-        time.sleep(2)
-
-    gesture_names = ["click"]
-    gesture_dict = {}
-
-    for k_ in gesture_names:
-        gesture_dict[k_] = None
-    while True:
-        time.sleep(0.01)
-        # print(" --->>> audio_process")
-        try:
-            for g_ in gesture_names:
-                if gesture_dict[g_] is None:
-                    gesture_dict[g_] = info_dict[g_]
-                else:
-
-                    if ("click"==g_):
-                        if (info_dict[g_]^gesture_dict[g_]) and info_dict[g_]==False:# 判断Click手势信号为下降沿，Click动作结束
-                            playsound("./materials/audio/cue/winwin.mp3")
-
-
-                    gesture_dict[g_] = info_dict[g_]
-
-        except Exception as inst:
-            print(type(inst),inst)    # the exception instance
-
-
-        if info_dict["break"] == True:
-            break
-
-def audio_process_up_edge(info_dict):
-
-    while (info_dict["handpose_procss_ready"] == False): # 等待 模型加载
-        time.sleep(2)
-
-    gesture_names = ["click"]
-    gesture_dict = {}
-
-    for k_ in gesture_names:
-        gesture_dict[k_] = None
-    while True:
-        time.sleep(0.01)
-        # print(" --->>> audio_process")
-        try:
-            for g_ in gesture_names:
-                if gesture_dict[g_] is None:
-                    gesture_dict[g_] = info_dict[g_]
-                else:
-
-                    if ("click"==g_):
-                        if (info_dict[g_]^gesture_dict[g_]) and info_dict[g_]==True:# 判断Click手势信号为上升沿，Click动作开始
-                            playsound("./materials/audio/cue/m2.mp3")
-                            # playsound("./materials/audio/sentences/clik_quick.mp3")
-
-                    gesture_dict[g_] = info_dict[g_]
-
-        except Exception as inst:
-            print(type(inst),inst)    # the exception instance
-
-
-        if info_dict["break"] == True:
-            break
-'''
-    启动识别语音进程  该项目中主要用到下面的自定义函数
-'''
-def audio_process_recognize_up_edge(info_dict):
-
-    while (info_dict["handpose_procss_ready"] == False): # 等待 模型加载
-        time.sleep(2)
-
-    gesture_names = ["double_en_pts"] # 姿态列表，
-    gesture_dict = {}
-
-    for k_ in gesture_names:#k_= double_en_pts
-        gesture_dict[k_] = None #gesture_dict[double_en_pts]=None
-
-    while True:
-        time.sleep(0.01)
-        # print(" --->>> audio_process")
-        try:
-            for g_ in gesture_names:  # 输出 double_en_pts ，因为gesture_name列表内容为str，所以g_也是str,输出的g_=double_en_pts
-                if gesture_dict[g_] is None:  # gesture_dict[double_en_pts] 为真
-                    gesture_dict[g_] = info_dict[g_]  #info_dict[g_]为False
-                else:
-
-                    if ("double_en_pts"==g_):
-                        if (info_dict[g_]^gesture_dict[g_]) and info_dict[g_]==True:# 判断Click手势信号为上升沿，Click动作开始
-                            playsound("./materials/audio/sentences/IdentifyingObjectsWait.mp3")
-                            playsound("./materials/audio/sentences/ObjectMayBeIdentified.mp3")
-                            if info_dict["reco_msg"] is not None:
-                                print("process - (audio_process_recognize_up_edge) reco_msg : {} ".format(info_dict["reco_msg"]))
-                                doc_name = info_dict["reco_msg"]["label_msg"]["doc_name"]
-                                reco_audio_file = "./materials/audio/imagenet_2012/{}.mp3".format(doc_name)
-
-                                #-----------------------------------------------
-                                # print("audio_process_recognize_up_edge",info_dict["reco_msg"]["label_msg"]["chinese_name"])
-
-                                if os.access(reco_audio_file,os.F_OK):# 判断语音文件是否存在
-                                    playsound(reco_audio_file)
-
-                                info_dict["reco_msg"] = None
-
-                    gesture_dict[g_] = info_dict[g_]
-
-        except Exception as inst:
-            print(type(inst),inst)    # exception instance
-
-        if info_dict["break"] == True:
-            break
 '''
 /*****************************************/
                 算法 pipeline
@@ -219,18 +56,31 @@ def handpose_x_process(info_dict,config):
     #
     img_reco_crop = None
 
-    cap = cv2.VideoCapture(int(config["camera_id"])) # 开启摄像机
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    host = 'localhost'  # 监听所有网络接口
+    port = 8089
+    server_socket.bind((host, port))
+    server_socket.listen(1)
+
+    # 接受连接
+    connection, client_address = server_socket.accept()
+    print('Connection from', client_address)
+
+    cv2.namedWindow('Frame', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Frame', 640, 480)
+
+    # cap = cv2.VideoCapture(int(config["camera_id"])) # 开启摄像机
     #cap = cv2.VideoCapture('2.mp4')
 
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    # fps = cap.get(cv2.CAP_PROP_FPS)
     # fps = 0.0
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
     # 获取视频的宽和高
-    size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-    out = cv2.VideoWriter('test.avi', fourcc, fps, size)
-    cap.set(cv2.CAP_PROP_EXPOSURE, 0) # 设置相机曝光，（注意：不是所有相机有效）
+    # size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    # out = cv2.VideoWriter('test.avi', fourcc, fps, size)
+    # cap.set(cv2.CAP_PROP_EXPOSURE, 0) # 设置相机曝光，（注意：不是所有相机有效）
 
     print("start handpose process ~")
 
@@ -242,9 +92,23 @@ def handpose_x_process(info_dict,config):
     track_index = 0 # 跟踪的全局索引
 
     while True:
-        ret, img = cap.read()# 读取相机图像
-        frame = img.copy()
-        if ret:# 读取相机图像成功
+        # ret, img = cap.read()# 读取相机图像
+        # 接收图像大小信息
+        data_size = struct.unpack('>L', connection.recv(struct.calcsize('>L')))[0]
+
+        # 接收并解析图像数据
+        data = b''
+        while len(data) < data_size:
+            packet = connection.recv(data_size - len(data))
+            if not packet:
+                break
+            data += packet
+
+        # 解pickle并显示图像
+        frame = pickle.loads(data, fix_imports=True, encoding="bytes")
+        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        if img is not None:# 读取相机图像成功
             # img = cv2.flip(img,-1)
             algo_img = img.copy()
             st_ = time.time()
@@ -352,15 +216,17 @@ def handpose_x_process(info_dict,config):
             cv2.putText(img, 'HandNum:[{}]'.format(len(hand_bbox)), (5,25),cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255))
 
             #cv2.namedWindow("image",0)
-            out.write(img)
-            cv2.imshow("image",img)
-            if cv2.waitKey(1) == 27:
+            # out.write(img)
+            cv2.imshow("Frame",img)
+
+            key = cv2.waitKey(1) & 0xFF
+            if key == 27:
                 info_dict["break"] = True
                 break
         else:
             break
 
-    cap.release()
+    # cap.release()
     cv2.destroyAllWindows()
 
 def main_handpose_x(cfg_file):  # 配置文件中主要是模型路径，图片大小等
@@ -390,9 +256,6 @@ def main_handpose_x(cfg_file):  # 配置文件中主要是模型路径，图片�
     #-------------------------------------------------- 初始化各进程
     process_list = []
     t = Process(target=handpose_x_process,args=(g_info_dict,config,))
-    process_list.append(t)
-
-    t = Process(target=audio_process_recognize_up_edge,args=(g_info_dict,)) # 上升沿播放
     process_list.append(t)
 
     for i in range(len(process_list)):

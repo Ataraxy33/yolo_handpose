@@ -1,4 +1,7 @@
 # 默认忽略的文件
 *.pt
 *.pth
+
+**/__pycache__
 *.pyc
+.DS_Store
