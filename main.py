@@ -16,8 +16,6 @@ def demo_logo():
     print("/---------------------------------/\n")
     print("             WELCOME      ")
     print("           << APP_X >>         ")
-    print("    Copyright 2021 Eric.Lee2021   ")
-    print("        Apache License 2.0       ")
     print("\n/---------------------------------/")
     print("/*********************************/\n")
 

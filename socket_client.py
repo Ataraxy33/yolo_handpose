@@ -5,7 +5,7 @@ import struct
 
 # 创建 TCP socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('localhost', 8089)  # 替换成你电脑的IP地址
+server_address = ('192.168.1.2', 8089)  # 替换成你电脑的IP地址
 
 # 连接服务器
 client_socket.connect(server_address)

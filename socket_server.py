@@ -1,48 +1,30 @@
 import cv2
 import socket
+import numpy as np
 import pickle
-import struct
 
-# 创建 TCP socket
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = 'localhost'  # 监听所有网络接口
-port = 8089
-server_socket.bind((host, port))
-server_socket.listen(1)
+UDP_IP = '0.0.0.0'
+UDP_PORT = 12345
 
-# 接受连接
-connection, client_address = server_socket.accept()
-print('Connection from', client_address)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((UDP_IP, UDP_PORT))
 
-# 设置窗口大小
-cv2.namedWindow('Frame', cv2.WINDOW_NORMAL)
-cv2.resizeWindow('Frame', 640, 480)
+cv2.namedWindow('Raspberry Pi Camera', cv2.WINDOW_NORMAL)
 
 try:
     while True:
-        # 接收图像大小信息
-        data_size = struct.unpack('>L', connection.recv(struct.calcsize('>L')))[0]
+        # 接收画面数据
+        image, addr = sock.recvfrom(100000)
+        image = pickle.loads(image)
+        image = np.frombuffer(image, dtype='uint8')
+        image = cv2.imdecode(image, 1)
+        cv2.imshow('Raspberry Pi Camera', image)
 
-        # 接收并解析图像数据
-        data = b''
-        while len(data) < data_size:
-            packet = connection.recv(data_size - len(data))
-            if not packet:
-                break
-            data += packet
-
-        # 解pickle并显示图像
-        frame = pickle.loads(data, fix_imports=True, encoding="bytes")
-        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        cv2.imshow('Frame', frame)
-
-        # 检测按键，按下 Esc 键退出
+        # 检测按键，按下Esc键退出程序
         key = cv2.waitKey(1) & 0xFF
         if key == 27:
-            # 发送退出信号，用 1 表示退出
             break
 finally:
-    connection.close()
-    server_socket.close()
+    # 关闭窗口和套接字
     cv2.destroyAllWindows()
+    sock.close()

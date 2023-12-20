@@ -81,8 +81,8 @@ def hand_angle(hand_):
 
 def h_gesture(angle_list):
     '''
-        # 二维约束的方法定义手势
-        # fist five gun love one six three thumbup yeah
+        二维约束的方法定义手势
+        fist five gun love one six three thumbup yeah
     '''
     thr_angle = 65.
     thr_angle_thumb = 53.
@@ -273,7 +273,7 @@ def handpose_track_keypoints21_pipeline(img,hands_dict,hands_click_dict,track_in
 '''
     判断是否启动识别语音
 '''
-def audio_recognize(img,algo_img,img_reco_crop,object_recognize_model,info_dict,double_en_pts,flag_click_stable):
+def recognize(img,algo_img,img_reco_crop,object_recognize_model,info_dict,double_en_pts,flag_click_stable):
     # 开启识别
     reco_msg = None
     if (len(double_en_pts) == 2) and (flag_click_stable == True):

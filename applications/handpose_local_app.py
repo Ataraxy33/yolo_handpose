@@ -28,7 +28,7 @@ from components.classify_imagenet.imagenet_c import classify_imagenet_model
 # 加载工具库
 
 from lib.hand_lib.cores.handpose_fuction import handpose_track_keypoints21_pipeline
-from lib.hand_lib.cores.handpose_fuction import hand_tracking,audio_recognize,judge_click_stabel,draw_click_lines,detect,h_gesture,hand_angle
+from lib.hand_lib.cores.handpose_fuction import hand_tracking,recognize,judge_click_stabel,draw_click_lines,detect,h_gesture,hand_angle
 from lib.hand_lib.utils.utils import parse_data_cfg
 
 
@@ -56,31 +56,16 @@ def handpose_x_process(info_dict,config):
     #
     img_reco_crop = None
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = 'localhost'  # 监听所有网络接口
-    port = 8089
-    server_socket.bind((host, port))
-    server_socket.listen(1)
+    UDP_IP = '192.168.1.2'
+    UDP_PORT = 12345
 
-    # 接受连接
-    connection, client_address = server_socket.accept()
-    print('Connection from', client_address)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((UDP_IP, UDP_PORT))
 
-    cv2.namedWindow('Frame', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Frame', 640, 480)
+    cv2.namedWindow('Raspberry Pi Camera', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Raspberry Pi Camera', 640, 480)
 
-    # cap = cv2.VideoCapture(int(config["camera_id"])) # 开启摄像机
-    #cap = cv2.VideoCapture('2.mp4')
-
-
-    # fps = cap.get(cv2.CAP_PROP_FPS)
-    # fps = 0.0
-    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-
-    # 获取视频的宽和高
-    # size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-    # out = cv2.VideoWriter('test.avi', fourcc, fps, size)
-    # cap.set(cv2.CAP_PROP_EXPOSURE, 0) # 设置相机曝光，（注意：不是所有相机有效）
+    # cap = cv2.VideoCapture(0) # 开启摄像机
 
     print("start handpose process ~")
 
@@ -93,32 +78,22 @@ def handpose_x_process(info_dict,config):
 
     while True:
         # ret, img = cap.read()# 读取相机图像
-        # 接收图像大小信息
-        data_size = struct.unpack('>L', connection.recv(struct.calcsize('>L')))[0]
-
-        # 接收并解析图像数据
-        data = b''
-        while len(data) < data_size:
-            packet = connection.recv(data_size - len(data))
-            if not packet:
-                break
-            data += packet
-
-        # 解pickle并显示图像
-        frame = pickle.loads(data, fix_imports=True, encoding="bytes")
-        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        if img is not None:# 读取相机图像成功
+        image, addr = sock.recvfrom(100000)
+        image = pickle.loads(image)
+        image = np.frombuffer(image, dtype='uint8')
+        image = cv2.imdecode(image, 1)
+        image = cv2.flip(image, 1)
+        if image is not None:# 读取相机图像成功
             # img = cv2.flip(img,-1)
-            algo_img = img.copy()
+            algo_img = image.copy()
             st_ = time.time()
             #------
-            hand_bbox =hand_detect_model.predict(img,vis = True) # 检测手，获取手的边界框
+            hand_bbox =hand_detect_model.predict(image,vis = True) # 检测手，获取手的边界框
             if len(hand_bbox)==2:
 
                 hands_dict,track_index = hand_tracking(data = hand_bbox,hands_dict = hands_dict,track_index = track_index) # 手跟踪，目前通过IOU方式进行目标跟踪
                 # 检测每个手的关键点及相关信息
-                handpose_list = handpose_track_keypoints21_pipeline(img,hands_dict = hands_dict,hands_click_dict = hands_click_dict,track_index = track_index,algo_img = algo_img,
+                handpose_list = handpose_track_keypoints21_pipeline(image,hands_dict = hands_dict,hands_click_dict = hands_click_dict,track_index = track_index,algo_img = algo_img,
                     handpose_model = handpose_model,gesture_model = gesture_model,
                     icon = None,vis = True)
                 et_ = time.time()
@@ -176,54 +151,56 @@ def handpose_x_process(info_dict,config):
                             gesture_lines_dict[id_]["click"] = False
 
                 #绘制手click 状态时的大拇指和食指中心坐标点轨迹
-                draw_click_lines(img,gesture_lines_dict,vis = bool(config["vis_gesture_lines"]))
+                draw_click_lines(image,gesture_lines_dict,vis = bool(config["vis_gesture_lines"]))
                 # 判断各手的click状态是否稳定，且满足设定阈值
-                flag_click_stable = judge_click_stabel(img,handpose_list,int(config["charge_cycle_step"]))
+                flag_click_stable = judge_click_stabel(image,handpose_list,int(config["charge_cycle_step"]))
                 # 判断是否启动识别语音,且进行选中目标识别
-                img_reco_crop,reco_msg = audio_recognize(img,algo_img,img_reco_crop,object_recognize_model,info_dict,double_en_pts,flag_click_stable)
-
+                img_reco_crop,reco_msg = recognize(image,algo_img,img_reco_crop,object_recognize_model,info_dict,double_en_pts,flag_click_stable)
             elif len(hand_bbox)==1:
                 mp_drawing = mp.solutions.drawing_utils
                 mp_hands = mp.solutions.hands
                 hands = mp_hands.Hands(
                     static_image_mode=False,
                     max_num_hands=1,
-                    min_detection_confidence=0.75,
-                    min_tracking_confidence=0.75)
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5)
                 # cap = cv2.VideoCapture(0)
                 # ret,frame = cap.read()
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 # img = cv2.flip(img, 1)
-                results = hands.process(img)
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                results = hands.process(image)
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
                 if results.multi_hand_landmarks:
                     for hand_landmarks in results.multi_hand_landmarks:
-                        mp_drawing.draw_landmarks(img, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                        mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
                         hand_local = []
                         for i in range(21):
-                            x = hand_landmarks.landmark[i].x * img.shape[1]
-                            y = hand_landmarks.landmark[i].y * img.shape[0]
+                            x = hand_landmarks.landmark[i].x * image.shape[1]
+                            y = hand_landmarks.landmark[i].y * image.shape[0]
                             hand_local.append((x, y))
                         if hand_local:
                             angle_list = hand_angle(hand_local)
                             gesture_str = h_gesture(angle_list)
-                            cv2.putText(img, gesture_str, (0, 100), 0, 1.3, (0, 0, 255), 3)
+                            if gesture_str == 'two':
+                                cv2.imwrite('./output/screenshot.jpg', image)
+                            cv2.putText(image, gesture_str, (0, 100), 0, 1.3, (0, 0, 255), 3)
 
 
-
-            cv2.putText(img, 'HandNum:[{}]'.format(len(hand_bbox)), (5,25),cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 0),5)
-            cv2.putText(img, 'HandNum:[{}]'.format(len(hand_bbox)), (5,25),cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255))
+            cv2.putText(image, 'HandNum:[{}]'.format(len(hand_bbox)), (5,25),cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 0),5)
+            cv2.putText(image, 'HandNum:[{}]'.format(len(hand_bbox)), (5,25),cv2.FONT_HERSHEY_COMPLEX, 0.7, (0, 0, 255))
 
             #cv2.namedWindow("image",0)
             # out.write(img)
-            cv2.imshow("Frame",img)
+            cv2.imshow('Raspberry Pi Camera',image)
 
             key = cv2.waitKey(1) & 0xFF
             if key == 27:
                 info_dict["break"] = True
                 break
         else:
+            cv2.destroyAllWindows()
+            sock.close()
             break
 
     # cap.release()
