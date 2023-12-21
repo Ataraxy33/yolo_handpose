@@ -88,7 +88,7 @@ def handpose_x_process(info_dict,config):
             algo_img = image.copy()
             st_ = time.time()
             #------
-            hand_bbox =hand_detect_model.predict(image,vis = True) # 检测手，获取手的边界框
+            hand_bbox = hand_detect_model.predict(image,vis = True) # 检测手，获取手的边界框
             if len(hand_bbox)==2:
 
                 hands_dict,track_index = hand_tracking(data = hand_bbox,hands_dict = hands_dict,track_index = track_index) # 手跟踪，目前通过IOU方式进行目标跟踪

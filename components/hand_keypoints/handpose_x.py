@@ -16,15 +16,6 @@ import time
 import math
 from datetime import datetime
 
-from components.hand_keypoints.models.resnet import resnet18,resnet34,resnet50,resnet101
-from components.hand_keypoints.models.squeezenet import squeezenet1_1,squeezenet1_0
-from components.hand_keypoints.models.resnet_50 import resnet50
-from components.hand_keypoints.models.resnet import resnet18,resnet34,resnet50,resnet101
-from components.hand_keypoints.models.squeezenet import squeezenet1_1,squeezenet1_0
-from components.hand_keypoints.models.shufflenetv2 import ShuffleNetV2
-from components.hand_keypoints.models.shufflenet import ShuffleNet
-from components.hand_keypoints.models.mobilenetv2 import MobileNetV2
-from torchvision.models import shufflenet_v2_x1_5 ,shufflenet_v2_x1_0 , shufflenet_v2_x2_0
 from components.hand_keypoints.models.rexnetv1 import ReXNetV1
 
 
@@ -62,7 +53,7 @@ def draw_bd_handpose_c(img_,hand_,x,y,thick=3):
 #
 class handpose_x_model(object):
     def __init__(self,
-        model_path = 'C:\Code\Raspberry\handpose_and_yolo-master\components\hand_keypoints\weights\ReXNetV1-size-256-wingloss102-0.122.pth',
+        model_path = '',
         img_size= 256,
         num_classes = 42,# 手部关键点个数 * 2 ： 21*2
         model_arch = "rexnetv1"
@@ -73,35 +64,9 @@ class handpose_x_model(object):
         self.img_size = img_size
         self.model_arch = model_arch
         #-----------------------------------------------------------------------
-        if model_arch == 'resnet_50':
-            model_ = resnet50(num_classes = num_classes,img_size = self.img_size)
-        elif model_arch == 'resnet_18':
-            model_ = resnet18(num_classes = num_classes,img_size = self.img_size)
-        elif model_arch == 'resnet_34':
-            model_ = resnet34(num_classes = num_classes,img_size = self.img_size)
-        elif model_arch == 'resnet_101':
-            model_ = resnet101(num_classes = num_classes,img_size = self.img_size)
-        elif model_arch == "squeezenet1_0":
-            model_ = squeezenet1_0(pretrained=True, num_classes=num_classes)
-        elif model_arch == "squeezenet1_1":
-            model_ = squeezenet1_1(pretrained=True, num_classes=num_classes)
-        elif model_arch == "shufflenetv2":
-            model_ = ShuffleNetV2(ratio=1., num_classes=num_classes)
-        elif model_arch == "shufflenet_v2_x1_5":
-            model_ = shufflenet_v2_x1_5(pretrained=False,num_classes=num_classes)
-        elif model_arch == "shufflenet_v2_x1_0":
-            model_ = shufflenet_v2_x1_0(pretrained=False,num_classes=num_classes)
-        elif model_arch == "shufflenet_v2_x2_0":
-            model_ = shufflenet_v2_x2_0(pretrained=False,num_classes=num_classes)
-        elif model_arch == "shufflenet":
-            model_ = ShuffleNet(num_blocks = [2,4,2], num_classes=num_classes, groups=3)
-        elif model_arch == "mobilenetv2":
-            model_ = MobileNetV2(num_classes=num_classes)
-        elif model_arch == "rexnetv1":
-            model_ = ReXNetV1(num_classes=num_classes)
-        else:
-            print("model_arch=", model_arch)
-            print(" no support the model")
+
+        model_ = ReXNetV1(num_classes=num_classes)
+
         #-----------------------------------------------------------------------
         use_cuda = torch.cuda.is_available()
         device = torch.device("cuda:0" if use_cuda else "cpu")

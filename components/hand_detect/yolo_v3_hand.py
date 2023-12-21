@@ -234,7 +234,7 @@ def letterbox(img, height=416, augment=False, color=(127.5, 127.5, 127.5)):
 # nms_thres = 0.5 # nms 阈值
 class yolo_v3_hand_model(object):
     def __init__(self,
-        model_path = 'C:\Code\Raspberry\handpose_and_yolo-master\components\hand_detect\weights\hand_416-2021-02-20.pt',
+        model_path = '',
         model_arch = 'yolov3',
         yolo_anchor_scale = 1.,
         img_size=416,
