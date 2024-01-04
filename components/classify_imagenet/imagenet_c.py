@@ -32,7 +32,7 @@ class classify_imagenet_model(object):
         f.close()
         self.classify_dict = dict_
         # print("-------------->>\n dict_ : \n",dict_)
-#
+
         print("classify model loading : ",model_path)
         # print('use model : %s'%(model_arch))
 
