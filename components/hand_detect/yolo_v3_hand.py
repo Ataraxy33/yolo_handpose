@@ -1,7 +1,4 @@
-#-*-coding:utf-8-*-
-# date:2021-03-09
-# Author: Eric.Lee
-# function: yolo v3 hand detect
+
 
 import os
 import cv2

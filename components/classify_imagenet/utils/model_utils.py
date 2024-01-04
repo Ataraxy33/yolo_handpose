@@ -1,7 +1,3 @@
-#-*-coding:utf-8-*-
-# date:2020-04-11
-# author: Eric.Lee
-# function : utils
 
 import os
 import numpy as np

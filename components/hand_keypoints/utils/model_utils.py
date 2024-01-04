@@ -1,7 +1,4 @@
-#-*-coding:utf-8-*-
-# date:2020-04-11
-# Author: Eric.Lee
-# function: model utils
+
 
 import os
 import numpy as np

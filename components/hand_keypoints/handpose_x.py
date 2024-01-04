@@ -1,7 +1,4 @@
-#-*-coding:utf-8-*-
-# date:2021-03-09
-# Author: Eric.Lee
-# function: handpose_x 21 keypoints 2D
+
 
 import os
 import torch

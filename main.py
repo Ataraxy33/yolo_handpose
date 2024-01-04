@@ -1,7 +1,4 @@
-#-*-coding:utf-8-*-
-# date:2020-10-19.7.23.24
-# Author: Eric.Lee
-# function: main
+
 
 import os
 import argparse
@@ -24,4 +21,4 @@ if __name__ == '__main__':
     cfg_file = "./lib/hand_lib/cfg/handpose.cfg"
     main_handpose_x(cfg_file)#加载 handpose 应用
 
-    print(" well done ~")
+    print("well done ~")

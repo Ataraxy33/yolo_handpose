@@ -1,7 +1,3 @@
-#-*-coding:utf-8-*-
-# date:2020-04-11
-# Author: Eric.Lee
-# function: common utils
 
 import os
 import shutil

@@ -1,7 +1,3 @@
-#-*-coding:utf-8-*-
-# date:2021-03-12
-# Author: Eric.Lee
-# function: handpose demo
 
 import os
 import cv2
@@ -77,14 +73,14 @@ def handpose_x_process(info_dict,config):
     track_index = 0 # 跟踪的全局索引
 
     while True:
-        # ret, img = cap.read()# 读取相机图像
-        image, addr = sock.recvfrom(100000)
+        # ret, image = cap.read()# 读取相机图像
+        image, addr = sock.recvfrom(65507)
         image = pickle.loads(image)
         image = np.frombuffer(image, dtype='uint8')
         image = cv2.imdecode(image, 1)
         image = cv2.flip(image, 1)
         if image is not None:# 读取相机图像成功
-            # img = cv2.flip(img,-1)
+            image = cv2.flip(image,-1)
             algo_img = image.copy()
             st_ = time.time()
             #------
@@ -200,7 +196,7 @@ def handpose_x_process(info_dict,config):
                 break
         else:
             cv2.destroyAllWindows()
-            sock.close()
+            # sock.close()
             break
 
     # cap.release()
